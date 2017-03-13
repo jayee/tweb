@@ -87,13 +87,16 @@ $ docker stop tweb
 tweb is built with [Polymer](https://www.polymer-project.org/) as front-end and [Java EE 7](https://docs.oracle.com/javaee/7/api/toc.htm) as backend.
 The front-end is based on the Polymer Starter Kit, see the [app document](./app/README.md). 
 
-To build the tweb front-end you need [Node.js](https://nodejs.org) with [npm](https://www.npmjs.com/) and polymer-cli.
+To build the tweb front-end you need [Node.js](https://nodejs.org) with [npm](https://www.npmjs.com/), [Bower](https://bower.io) and polymer-cli.
 
 To build the tweb backend you need java 8 sdk and maven.
 
 Build everything by
 
 ```bash
+$ cd tweb/app
+$ bower install
+
 $ cd tweb
 $ mvn install
 ```
