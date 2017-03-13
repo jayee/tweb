@@ -1,0 +1,68 @@
+<!--
+@license
+Copyright (c) 2016 The Polymer Project Authors. All rights reserved.
+This code may only be used under the BSD style license found at http://polymer.github.io/LICENSE.txt
+The complete set of authors may be found at http://polymer.github.io/AUTHORS.txt
+The complete set of contributors may be found at http://polymer.github.io/CONTRIBUTORS.txt
+Code distributed by Google as part of the polymer project is also
+subject to an additional IP rights grant found at http://polymer.github.io/PATENTS.txt
+-->
+
+<link rel="import" href="../bower_components/polymer/polymer.html">
+<link rel="import" href="../bower_components/paper-dropdown-menu/paper-dropdown-menu.html">
+<link rel="import" href="../bower_components/paper-listbox/paper-listbox.html">
+<link rel="import" href="../bower_components/paper-item/paper-item.html">
+
+<link rel="import" href="shared-styles.html">
+
+<dom-module id="tw-langselect">
+  <template>
+    <style include="shared-styles">
+
+      :host {
+        display: block;
+        padding: 10px;
+
+      }
+
+      paper-listbox {
+        @apply(--layout-vertical);
+      }
+
+
+    </style>
+
+
+    <paper-dropdown-menu label="Language">
+      <paper-listbox class="dropdown-content" selected="{{langselected}}" attr-for-selected="str">
+        <template is="dom-repeat" items="{{info.languages}}">
+          <paper-item str="[[item]]">
+            [[item]]
+          </paper-item>
+        </template>
+      </paper-listbox>
+    </paper-dropdown-menu>
+
+  </template>
+
+  <script>
+    Polymer({
+      is: 'tw-langselect',
+      properties: {
+          info: {
+            type: Object
+          },
+          langselected: {
+            type: String,
+            notify: true
+          }
+        },
+        langChanged: function (newVal) {
+//          console.log('val: ' + newVal);
+//          console.log('langselected: ' + this.langselected);
+        },
+        observers: ['langChanged(langselected)']
+
+    });
+  </script>
+</dom-module>

@@ -1,0 +1,60 @@
+<!--
+@license
+Copyright (c) 2016 The Polymer Project Authors. All rights reserved.
+This code may only be used under the BSD style license found at http://polymer.github.io/LICENSE.txt
+The complete set of authors may be found at http://polymer.github.io/AUTHORS.txt
+The complete set of contributors may be found at http://polymer.github.io/CONTRIBUTORS.txt
+Code distributed by Google as part of the polymer project is also
+subject to an additional IP rights grant found at http://polymer.github.io/PATENTS.txt
+-->
+
+<link rel="import" href="../bower_components/polymer/polymer.html">
+<link rel="import" href="../bower_components/paper-dialog/paper-dialog.html">
+<link rel="import" href="../bower_components/paper-button/paper-button.html">
+<link rel="import" href="../bower_components/neon-animation/animations/scale-up-animation.html">
+<link rel="import" href="../bower_components/neon-animation/animations/scale-down-animation.html">
+
+
+<link rel="import" href="tw-langselect.html">
+
+<link rel="import" href="shared-styles.html">
+
+<dom-module id="tw-options">
+  <template>
+    <style include="shared-styles">
+      :host {
+        display: block;
+      }
+    </style>
+
+    <paper-button id="optionsButton">Options</paper-button>
+
+    <paper-dialog id="optionsDialog" entry-animation="scale-up-animation" exit-animation="fade-out-animation">
+      <h2>Options</h2>
+      <tw-langselect info="[[info]]" langselected="{{options.lang}}"></tw-langselect>
+      <div class="buttons">
+        <paper-button id="closeButton" dialog-confirm autofocus>Close</paper-button>
+      </div>
+    </paper-dialog>
+
+  </template>
+
+  <script>
+    Polymer({
+      is: 'tw-options',
+      properties: {
+        info: Object,
+        options:  Object
+      },
+      listeners: {
+        'optionsButton.tap': 'handleOpen',
+        'closeButton.tap': 'handleClose'
+      },
+      handleOpen: function () {
+        this.$.optionsDialog.open();
+      },
+      handleClose: function () {
+      }
+    });
+  </script>
+</dom-module>

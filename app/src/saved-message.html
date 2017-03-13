@@ -1,0 +1,78 @@
+<!--
+@license
+Copyright (c) 2016 The Polymer Project Authors. All rights reserved.
+This code may only be used under the BSD style license found at http://polymer.github.io/LICENSE.txt
+The complete set of authors may be found at http://polymer.github.io/AUTHORS.txt
+The complete set of contributors may be found at http://polymer.github.io/CONTRIBUTORS.txt
+Code distributed by Google as part of the polymer project is also
+subject to an additional IP rights grant found at http://polymer.github.io/PATENTS.txt
+-->
+
+<link rel="import" href="../bower_components/polymer/polymer.html">
+<link rel="import" href="../bower_components/neon-animation/neon-animation-runner-behavior.html">
+<link rel="import" href="../bower_components/neon-animation/animations/fade-in-animation.html">
+<link rel="import" href="../bower_components/neon-animation/animations/fade-out-animation.html">
+
+<link rel="import" href="shared-styles.html">
+
+<dom-module id="saved-message">
+  <template>
+    <style include="shared-styles">
+
+      :host {
+        display: none;
+      }
+
+      .saved-message {
+        @apply(--paper-font-body2);
+      }
+    </style>
+
+    <span class="saved-message">(Saved)</span>
+
+  </template>
+
+  <script>
+    Polymer({
+      is: 'saved-message',
+      behaviors: [
+        Polymer.NeonAnimationRunnerBehavior
+      ],
+      properties: {
+        showing: Boolean,
+        animationConfig: {
+          value: function() {
+            return {
+              'show': {
+                name: 'fade-in-animation',
+                node: this,
+                timing: {delay: 1000}
+              },
+              'hide': {
+                name: 'fade-out-animation',
+                node: this,
+                timing: {delay: 1000}
+              }
+            }
+          }
+        }
+      },
+      listeners: {
+        'neon-animation-finish': '_onNeonAnimationFinish'
+      },
+      blink: function() {
+        this.showing = true;
+        this.style.display = 'inline-block';
+        this.playAnimation('show');
+      },
+      _onNeonAnimationFinish: function() {
+        if (this.showing) {
+          this.showing = false;
+          this.playAnimation('hide');
+        } else {
+          this.style.display = 'none';
+        }
+      }
+    });
+  </script>
+</dom-module>

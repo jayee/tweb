@@ -1,0 +1,301 @@
+<!--
+@license
+Copyright (c) 2016 The Polymer Project Authors. All rights reserved.
+This code may only be used under the BSD style license found at http://polymer.github.io/LICENSE.txt
+The complete set of authors may be found at http://polymer.github.io/AUTHORS.txt
+The complete set of contributors may be found at http://polymer.github.io/CONTRIBUTORS.txt
+Code distributed by Google as part of the polymer project is also
+subject to an additional IP rights grant found at http://polymer.github.io/PATENTS.txt
+-->
+
+<link rel="import" href="../bower_components/polymer/polymer.html">
+<link rel="import" href="../bower_components/app-layout/app-drawer/app-drawer.html">
+<link rel="import" href="../bower_components/app-layout/app-drawer-layout/app-drawer-layout.html">
+<link rel="import" href="../bower_components/app-layout/app-header/app-header.html">
+<link rel="import" href="../bower_components/app-layout/app-header-layout/app-header-layout.html">
+<link rel="import" href="../bower_components/app-layout/app-scroll-effects/app-scroll-effects.html">
+<link rel="import" href="../bower_components/app-layout/app-toolbar/app-toolbar.html">
+<link rel="import" href="../bower_components/app-route/app-location.html">
+<link rel="import" href="../bower_components/app-route/app-route.html">
+<link rel="import" href="../bower_components/iron-pages/iron-pages.html">
+<link rel="import" href="../bower_components/iron-selector/iron-selector.html">
+<link rel="import" href="../bower_components/paper-icon-button/paper-icon-button.html">
+<link rel="import" href="../bower_components/iron-icons/iron-icons.html">
+<link rel="import" href="../bower_components/iron-ajax/iron-ajax.html">
+<link rel="import" href="../bower_components/iron-localstorage/iron-localstorage.html">
+<link rel="import" href="../bower_components/paper-spinner/paper-spinner.html">
+
+<link rel="import" href="../bower_components/toast-er/toast-er.html">
+
+<link rel="import" href="shared-styles.html">
+
+<!-- Include all own components not in iron-pages -->
+<link rel="import" href="tw-options.html">
+
+
+<dom-module id="tw-app">
+  <template>
+    <style include="shared-styles">
+      :host {
+        --app-primary-color: rgb(0, 66, 122);
+        --app-secondary-color: black;
+
+        display: block;
+      }
+
+      app-header {
+        color: #fff;
+        background-color: var(--app-primary-color);
+      }
+
+      app-header paper-icon-button {
+        --paper-icon-button-ink-color: white;
+
+      }
+
+      app-drawer {
+        --app-drawer-width: 170px;
+
+        --app-drawer-content-container: {
+          box-shadow: 1px 0 2px 1px rgba(0, 0, 0, 0.18);
+          /*border-left: 4px solid var(--app-primary-color);*/
+        };
+
+      }
+
+      .drawer-list {
+        margin: 0 20px;
+      }
+
+      .drawer-list a {
+        display: block;
+
+        padding: 0 16px;
+
+        text-decoration: none;
+
+        color: var(--app-secondary-color);
+
+        line-height: 40px;
+      }
+
+      .drawer-list a.iron-selected {
+        color: black;
+
+        font-weight: bold;
+      }
+
+      toast-er {
+        z-index: 1000;
+      }
+
+    </style>
+
+    <iron-ajax
+        id="ajaxInfo"
+        auto
+        url="/resources/info"
+        loading="{{isLoading}}"
+        handle-as="json"
+        last-response="{{appInfo}}"
+        on-response="handleInfoResponse"
+        on-error="handleServerError">
+    </iron-ajax>
+
+    <iron-ajax
+        id="ajaxSummary"
+        url="/resources/summary/[[appOptions.lang]]"
+        handle-as="json"
+        last-response="{{summary}}"
+        on-error="handleServerError">
+    </iron-ajax>
+
+    <iron-localstorage
+        name="app-options"
+        value="{{appOptions}}"
+        on-iron-localstorage-load="_loadedAppOptions"
+        on-iron-localstorage-load-empty="_initAppOptions">
+    </iron-localstorage>
+
+    <toast-er type="error" duration="5000" blink="medium" position="bottom-right"></toast-er>
+
+    <app-location route="{{route}}"></app-location>
+
+    <app-route
+        route="{{route}}"
+        pattern="/:page"
+        data="{{routeData}}"
+        tail="{{subroute}}"
+        query-params="{{queryParams}}">
+    </app-route>
+
+    <app-drawer-layout fullbleed>
+      <!-- Drawer content -->
+      <app-drawer>
+        <app-toolbar>
+          Menu
+        </app-toolbar>
+        <iron-selector selected="[[page]]" attr-for-selected="name" class="drawer-list" role="navigation">
+          <a name="overview" href="/overview">
+            Overview
+          </a>
+          <a name="summary" href="/summary">
+            Summary
+          </a>
+          <a name="search" href="/search">
+            Search
+          </a>
+          <a name="translations" href="/translations">
+            Translations <span hidden$="[[isEditHidden]]"> - Edit</span>
+          </a>
+
+        </iron-selector>
+      </app-drawer>
+
+      <!-- Main content -->
+      <app-header-layout has-scrolling-region>
+
+        <app-header condenses reveals effects="waterfall">
+          <app-toolbar>
+            <paper-icon-button icon="menu" drawer-toggle></paper-icon-button>
+            <div main-title>Translation Web</div>
+            <tw-options info="[[appInfo]]" options="{{appOptions}}"></tw-options>
+          </app-toolbar>
+        </app-header>
+
+
+        <div class="content-frame">
+          <div class="content-frame" hidden$="[[isLoading]]">
+
+            <iron-pages
+                selected="[[page]]"
+                attr-for-selected="name"
+                fallback-selection="view404"
+                role="main">
+              <tw-overview name="overview" info="[[appInfo]]"></tw-overview>
+              <tw-summary name="summary" options="[[appOptions]]" info="[[appInfo]]" summary="[[summary]]"></tw-summary>
+              <tw-search name="search" options="[[appOptions]]"></tw-search>
+              <tw-translations name="translations" options="[[appOptions]]" loading="{{isLoading}}"></tw-translations>
+              <tw-translation name="translation" info="[[appInfo]]" options="[[appOptions]]" subroute="[[subroute]]"
+                              loading="{{isLoading}}" params="{{queryParams}}"></tw-translation>
+              <tw-view404 name="view404"></tw-view404>
+
+            </iron-pages>
+
+          </div>
+
+          <div class="progress" hidden$="[[!isLoading]]">
+            <paper-spinner active$="[[isLoading]]"></paper-spinner>
+          </div>
+
+        </div>
+
+      </app-header-layout>
+    </app-drawer-layout>
+
+  </template>
+
+  <script>
+      Polymer({
+          is: 'tw-app',
+
+          properties: {
+              route: Object,
+              subroute: Object,
+              routeData: Object,
+              queryParams: Object,
+
+              appInfo: Object,
+
+              page: {
+                  type: String,
+                  reflectToAttribute: true
+              },
+              isLoading: {
+                  type: Boolean,
+                  value: false
+              },
+              appOptions: {
+                  type: Object,
+                  notify: true
+              },
+              summary: Object,
+              isEditHidden: Boolean
+          },
+
+          observers: [
+              '_routePageChanged(routeData.page)',
+              '_optionsChanged(appOptions.*)',
+              '_pageChanged(page)'
+          ],
+
+          _routePageChanged: function (page) {
+              this.page = page || 'overview';
+              this.isEditHidden = page !== 'translation';
+          },
+
+          _pageChanged: function (page) {
+              // Load page import on demand. Show 404 page if fails
+              var resolvedPageUrl = this.resolveUrl('tw-' + page + '.html');
+              this.importHref(resolvedPageUrl, null, this._showPage404, true);
+
+              // Update data from server
+              switch (page) {
+                  case 'overview' :
+                      console.log("Fetching new overview data from the server");
+                      this.$.ajaxInfo.generateRequest();
+                      break;
+                  case 'summary' :
+                      this.$.ajaxInfo.generateRequest();
+                      console.log("Fetching new summary data from the server");
+                      this.$.ajaxSummary.generateRequest();
+                      break;
+              }
+          },
+
+          _showPage404: function () {
+              this.page = 'view404';
+          },
+
+          _optionsChanged: function (changeRecord) {
+              if ("" != this.appOptions.lang) {
+                  this.$.ajaxSummary.generateRequest();
+              }
+          },
+
+          _loadedAppOptions: function () {
+              console.log("loaded options from local storage");
+          },
+
+          _initAppOptions: function () {
+              console.log("initializing the options");
+              this.appOptions = new Object();
+          },
+
+          created: function () {
+              console.log("app created");
+          },
+
+          handleInfoResponse: function (event) {
+              this._addDefaultOptions(event.detail.response);
+              console.log("appInfo handled");
+          },
+
+          _addDefaultOptions: function (info) {
+              if (!this.appOptions.lang) {
+                  this.set('appOptions.lang', info.defaultOptions.lang);
+              }
+          },
+
+          handleServerError: function () {
+              this.fire('iron-signal', {
+                  name: 'toaster-show',
+                  data: {
+                      text: 'Problems with server/communication!'
+                  }
+              });
+          }
+
+      });
+  </script>
+</dom-module>

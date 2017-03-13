@@ -1,0 +1,24 @@
+{
+  "entrypoint": "index.html",
+  "shell": "src/tw-app.html",
+  "fragments": [
+    "src/tw-overview.html",
+    "src/tw-summary.html",
+    "src/tw-search.html",
+    "src/tw-translations.html",
+    "src/tw-translation.html",
+    "src/tw-view404.html",
+    "src/tw-options.html",
+    "src/tw-langselect.html"
+  ],
+  "sourceGlobs": [
+   "src/**/*",
+   "images/**/*",
+   "bower.json"
+  ],
+  "includeDependencies": [
+    "manifest.json",
+    "bower_components/webcomponentsjs/webcomponents-lite.min.js",
+    "bower_components/sinonjs/sinon.js"
+  ]
+}

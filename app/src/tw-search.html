@@ -1,0 +1,160 @@
+<!--
+@license
+Copyright (c) 2016 The Polymer Project Authors. All rights reserved.
+This code may only be used under the BSD style license found at http://polymer.github.io/LICENSE.txt
+The complete set of authors may be found at http://polymer.github.io/AUTHORS.txt
+The complete set of contributors may be found at http://polymer.github.io/CONTRIBUTORS.txt
+Code distributed by Google as part of the polymer project is also
+subject to an additional IP rights grant found at http://polymer.github.io/PATENTS.txt
+-->
+
+<link rel="import" href="../bower_components/polymer/polymer.html">
+<link rel="import" href="../bower_components/paper-input/paper-textarea.html">
+<link rel="import" href="../bower_components/paper-toggle-button/paper-toggle-button.html">
+<link rel="import" href="shared-styles.html">
+
+<dom-module id="tw-search">
+  <template>
+    <style include="shared-styles">
+      :host {
+        display: block;
+        padding: 10px;
+      }
+
+      .container {
+        @apply(--layout-vertical);
+      }
+
+      .translation-link {
+        color: inherit;
+        text-decoration: none;
+      }
+
+      paper-item-body {
+        width: 100%;
+      }
+
+    </style>
+
+    <iron-ajax
+        id="ajaxSearch"
+        url="/resources/search/[[searchStrEncoded]]"
+        loading="{{loading}}"
+        handle-as="json"
+        last-response="{{result}}"
+        on-error="handleServerError">
+    </iron-ajax>
+
+
+    <div class="card">
+      <div class="container">
+        <form is="iron-form" id="form" method="post" action="#">
+          <paper-input label="Find translations" type="search" value="{{searchStr}}"></paper-input>
+          <paper-toggle-button checked="{{filterCurrentLang}}">Filter result with current language</paper-toggle-button>
+        </form>
+      </div>
+    </div>
+
+    <template is="dom-repeat" items="[[hits]]" as="hit" filter="{{applyFilter(filterCurrentLang, options.lang)}}">
+      <div class="card">
+        <div class="container">
+          <div role="listbox">
+
+            <a class="translation-link" href="/translation/[[linkLang(hit.lang)]]/[[hit.filename]]?filter=[[hit.key]]"> <!--?filter=[[hit.key]]-->
+              <paper-item>
+                [[hit.filename]]
+              </paper-item>
+            </a>
+
+            <paper-item hidden$="[[hit.keyMatch]]">
+              <paper-item-body>
+                <paper-textarea label="matching value" readOnly value="[[hit.key]] : [[hit.before]]*[[hit.match]]*[[hit.after]]"></paper-textarea>
+              </paper-item-body>
+            </paper-item>
+
+            <paper-item hidden$="[[!hit.keyMatch]]">
+              <paper-item-body>
+                <paper-textarea label="matching key" readOnly value="[[hit.before]]*[[hit.match]]*[[hit.after]] : [[hit.value]]"></paper-textarea>
+              </paper-item-body>
+            </paper-item>
+
+          </div>
+        </div>
+      </div>
+    </template>
+
+  </template>
+
+  <script>
+      Polymer({
+          is: 'tw-search',
+          properties: {
+              options: Object,
+              loading: {
+                  type: Boolean,
+                  value: false,
+                  notify: true
+              },
+              result: {
+                  type: Object,
+                  observer: '_resultChanged'
+              },
+              hits: Object,
+              filterCurrentLang: {
+                  type: Boolean,
+                  value: true
+              },
+              searchStrEncoded: String,
+              searchStr: {
+                  type: String,
+                  observer: '_searchStrChanged'
+              }
+
+          },
+
+          linkLang : function (lang) {
+              if (lang && lang.length > 1) {
+                  return lang;
+              }
+              return this.options.lang;
+          },
+
+          _searchStrChanged: function (newValue) {
+              if (newValue.length > 2 && newValue != this.searchStrEncoded) {
+                  this.debounce("doSearch", function () {
+                      this.searchStrEncoded = newValue;
+                      this.$.ajaxSearch.generateRequest();
+                  }, 300);
+              }
+              else if (newValue.length <= 2) {
+                  this.set('hits',  []);
+              }
+          },
+          _resultChanged: function (newValue) {
+              // Take first 25 hits
+              this.set('hits', newValue.results.splice(0, 25));
+          },
+          applyFilter: function (useLangFilter, currentLang) {
+              if (!useLangFilter) {
+                  // set filter to null to disable filtering
+                  return null;
+              } else {
+                  // return a filter function for the current language in options
+                  return function (hit) {
+                      return ("" == hit.lang || currentLang == hit.lang);
+                  }
+              }
+          },
+
+          handleServerError: function () {
+              this.fire('iron-signal', {
+                  name: 'toaster-show',
+                  data: {
+                      text: 'Problems with server/communication!'
+                  }
+              });
+          }
+
+      });
+  </script>
+</dom-module>

@@ -1,0 +1,20 @@
+version: '2.1'
+services:
+  web:
+    build: .
+    image: jayee/tweb
+    container_name: tweb
+
+    environment:
+      LOCAL_USER_ID:
+
+    ports:
+      - "${EXTERNAL_PORT:-8080}:8080"
+      - "9009:9009"
+
+
+    volumes:
+      ### Use host tz
+      ### - /etc/localtime:/etc/localtime:ro
+      - ${ROOT_PATH:-../..}:/storage_root
+

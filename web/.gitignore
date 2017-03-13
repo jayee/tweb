@@ -1,0 +1,11 @@
+.DS_Store
+ng*xml
+
+/target
+
+#ignore node_modules, as the node project is not "deployed" per se: 
+#http://www.mikealrogers.com/posts/nodemodules-in-git.html
+/src/main/ngapp/node_modules
+
+/src/main/ngapp/dist
+/src/main/ngapp/generated

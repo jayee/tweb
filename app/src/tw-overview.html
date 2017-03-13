@@ -1,0 +1,80 @@
+<!--
+@license
+Copyright (c) 2016 The Polymer Project Authors. All rights reserved.
+This code may only be used under the BSD style license found at http://polymer.github.io/LICENSE.txt
+The complete set of authors may be found at http://polymer.github.io/AUTHORS.txt
+The complete set of contributors may be found at http://polymer.github.io/CONTRIBUTORS.txt
+Code distributed by Google as part of the polymer project is also
+subject to an additional IP rights grant found at http://polymer.github.io/PATENTS.txt
+-->
+
+<link rel="import" href="../bower_components/polymer/polymer.html">
+<link rel="import" href="shared-styles.html">
+
+<dom-module id="tw-overview">
+  <template>
+    <style include="shared-styles">
+      :host {
+        display: block;
+        padding: 10px;
+      }
+
+      h4 {
+        display: inline;
+      }
+    </style>
+
+    <div class="card">
+      <h2>Application Information</h2>
+
+      <div class="content-item">
+        <h4>Configured languages:</h4>
+        <span>
+        <template is="dom-repeat" items="[[info.languages]]">
+          [[item]]
+        </template>
+        </span>
+      </div>
+
+      <div class="content-item">
+        <h4>Default language:</h4>
+        <span>[[info.defaultOptions.lang]]</span>
+      </div>
+
+      <div class="content-item">
+        <h4>Google Translation Key:</h4>
+        <span>[[info.googleTranslationKey]]</span>
+      </div>
+
+      <div class="content-item">
+        <h4>Version:</h4>
+        <span>[[info.version]]</span>
+      </div>
+
+      <div class="content-item">
+        <h4>Build date:</h4>
+        <span>[[info.build]]</span>
+      </div>
+
+      <div class="content-item">
+        <h4>Last full scan:</h4>
+        <span>[[info.lastscandate]] (duration: [[info.lastscanduration]])</span>
+      </div>
+
+      <div class="content-item">
+        <h4>Number of translations:</h4>
+        <span>[[info.nroftranslations]]</span>
+      </div>
+    </div>
+
+  </template>
+
+  <script>
+      Polymer({
+          is: 'tw-overview',
+          properties: {
+              info: Object
+          }
+      });
+  </script>
+</dom-module>

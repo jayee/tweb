@@ -1,0 +1,179 @@
+<!--
+@license
+Copyright (c) 2016 The Polymer Project Authors. All rights reserved.
+This code may only be used under the BSD style license found at http://polymer.github.io/LICENSE.txt
+The complete set of authors may be found at http://polymer.github.io/AUTHORS.txt
+The complete set of contributors may be found at http://polymer.github.io/CONTRIBUTORS.txt
+Code distributed by Google as part of the polymer project is also
+subject to an additional IP rights grant found at http://polymer.github.io/PATENTS.txt
+-->
+
+<link rel="import" href="../bower_components/polymer/polymer.html">
+<link rel="import" href="../bower_components/iron-icons/iron-icons.html">
+<link rel="import" href="shared-styles.html">
+
+<dom-module id="tw-summary">
+  <template>
+    <style include="shared-styles">
+      :host {
+        display: block;
+        padding: 10px;
+      }
+
+      h4 {
+        display: inline;
+      }
+
+      .translation-link {
+        color: inherit;
+        text-decoration: none;
+        font-weight: bolder;
+      }
+
+      .item-header {
+        margin-bottom: 0.5em;
+      }
+
+    </style>
+
+    <div class="card">
+      <h2>Translation Summary</h2>
+
+      <div class="content-item">
+        <h4>Language:</h4>
+        <span>[[options.lang]]</span>
+      </div>
+
+      <div class="content-item">
+        <h4>Last full scan:</h4>
+        <span>[[info.lastscandate]] (duration: [[info.lastscanduration]])</span>
+      </div>
+
+      <div class="content-item">
+        <h4>Fully translated files:</h4>
+        <span>[[summaryOverview.numFullyTranslated]]</span>
+      </div>
+
+      <div class="content-item">
+        <h4>Files needing translations:</h4>
+        <span>[[summaryOverview.numNeedTranslation]]</span>
+      </div>
+
+      <div class="content-item">
+        <h4>Missing translations:</h4>
+        <span>[[summaryOverview.totalMissingKeys]]</span>
+      </div>
+
+      <div class="content-item">
+        <h4>Parameter mismatches:</h4>
+        <span>[[summaryOverview.totalParameterMismatches]]</span>
+      </div>
+
+    </div>
+
+
+    <template is="dom-repeat" items="[[summary]]" as="summaryItem">
+      <div class="card">
+        <div class="container">
+
+          <paper-item>
+            <paper-item-body>
+              <div class="item-header">
+                <iron-icon icon="icons:error-outline" hidden$="[[isEmptySummary(summaryItem)]]"></iron-icon>
+                <iron-icon icon="icons:done" hidden$="[[!isEmptySummary(summaryItem)]]"></iron-icon>
+                <a class="translation-link" href="/translation/[[summaryItem.lang]]/[[summaryItem.filename]]">
+                  [[summaryItem.filename]]
+                </a>
+              </div>
+              <div hidden$="[[isEmpty(summaryItem.missingKeys)]]">
+                <span class="notice">Missing keys [[[summaryItem.missingKeys.length]]]:</span>
+                <template is="dom-repeat" items="[[firstItems(summaryItem.missingKeys)]]" as="missingKey">
+                  [[missingKey]]
+                </template>
+              </div>
+              <div hidden$="[[isEmpty(summaryItem.parameterMismatches)]]">
+                <span class="notice">Keys missing parameters [[[summaryItem.parameterMismatches.length]]]:</span>
+                <template is="dom-repeat" items="[[firstItems(summaryItem.parameterMismatches)]]" as="paramMismatch">
+                  [[paramMismatch]]
+                </template>
+              </div>
+              <div secondary hidden$="[[isEmpty(summaryItem.parseInfo)]]">
+                <span class="notice">Notes: </span>[[summaryItem.parseInfo]]
+              </div>
+            </paper-item-body>
+          </paper-item>
+
+        </div>
+      </div>
+
+    </template>
+
+  </template>
+
+  <script>
+      Polymer({
+          is: 'tw-summary',
+          properties: {
+              options: Object,
+              info: Object,
+              summary: {
+                  type: Object,
+                  observer: '_summaryChanged'
+              },
+              summaryOverview: Object
+          },
+
+          firstItems: function (arr) {
+              var shortenedArray = arr;
+              if (arr.length > 10) {
+                  shortenedArray = arr.slice(0, 10);
+                  shortenedArray.push("...");
+              }
+              return shortenedArray;
+          },
+
+          isEmpty: function (val) {
+              if (val == undefined || val == null) {
+                  return true;
+              }
+
+              if (Array.isArray(val)) {
+                  return val.length == 0;
+              }
+
+              if (typeof val == "string") {
+                  return val.length == 0;
+              }
+          },
+
+          isEmptySummary: function (sum) {
+              return this.isEmpty(sum.parseInfo) && this.isEmpty(sum.missingKeys) && this.isEmpty(sum.parameterMismatches);
+          },
+
+          _summaryChanged: function (newSummary) {
+              var overview = {
+                  numFullyTranslated: 0,
+                  numNeedTranslation: 0,
+                  totalMissingKeys: 0,
+                  totalParameterMismatches: 0
+              };
+
+              if (undefined != newSummary.length) {
+                  for (let sum of newSummary) {
+                      if (this.isEmpty(sum.missingKeys) && this.isEmpty(sum.parameterMismatches)) {
+                          overview.numFullyTranslated++;
+                      }
+                      else {
+                          overview.numNeedTranslation++;
+                          overview.totalMissingKeys = overview.totalMissingKeys + sum.missingKeys.length;
+                          overview.totalParameterMismatches = overview.totalParameterMismatches + sum.parameterMismatches.length;
+                      }
+                  }
+              }
+
+              this.set('summaryOverview', overview);
+          }
+
+      });
+  </script>
+</dom-module>

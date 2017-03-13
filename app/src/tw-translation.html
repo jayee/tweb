@@ -1,0 +1,470 @@
+<!--
+@license
+Copyright (c) 2016 The Polymer Project Authors. All rights reserved.
+This code may only be used under the BSD style license found at http://polymer.github.io/LICENSE.txt
+The complete set of authors may be found at http://polymer.github.io/AUTHORS.txt
+The complete set of contributors may be found at http://polymer.github.io/CONTRIBUTORS.txt
+Code distributed by Google as part of the polymer project is also
+subject to an additional IP rights grant found at http://polymer.github.io/PATENTS.txt
+-->
+
+<link rel="import" href="../bower_components/polymer/polymer.html">
+<link rel="import" href="../bower_components/iron-ajax/iron-ajax.html">
+<link rel="import" href="../bower_components/paper-item/paper-item.html">
+<link rel="import" href="../bower_components/paper-item/paper-item-body.html">
+<link rel="import" href="../bower_components/paper-input/paper-input.html">
+<link rel="import" href="../bower_components/paper-input/paper-textarea.html">
+<link rel="import" href="../bower_components/iron-autogrow-textarea/iron-autogrow-textarea.html">
+<link rel="import" href="../bower_components/paper-icon-button/paper-icon-button.html">
+<link rel="import" href="../bower_components/iron-icons/iron-icons.html">
+<link rel="import" href="../bower_components/iron-list/iron-list.html">
+<link rel="import" href="../bower_components/paper-checkbox/paper-checkbox.html">
+
+<link rel="import" href="shared-styles.html">
+<link rel="import" href="saved-message.html">
+
+<dom-module id="tw-translation">
+  <template>
+    <style include="shared-styles">
+      :host {
+        padding: 10px;
+        @apply(--layout-vertical);
+      }
+
+      .translation-unit {
+        padding: 8px;
+      }
+
+      .key-title {
+        color: black;
+        @apply(--paper-font-subhead);
+        @apply(--layout-horizontal);
+        @apply(--layout-center);
+      }
+
+      .translation-content {
+        padding: 0.5em 0 1em 1em;
+      }
+
+      .translation-text {
+        margin-bottom: 0.5em;
+      }
+
+      .text-title {
+        color: black;
+      }
+
+      h4 {
+        display: inline;
+      }
+
+      iron-list {
+        margin: 24px;
+        padding-bottom: 124px;
+
+      }
+
+      paper-checkbox {
+        margin: 1em 0em;
+      }
+
+      saved-message {
+        margin-left: 1em;
+      }
+
+    </style>
+
+    <iron-ajax
+        id="ajaxTranslationDefault"
+        loading="{{loading}}"
+        handle-as="json"
+        verbose="true"
+        last-response="{{defaultContent}}"
+        on-response="handleTranslationsResponse"
+        on-error="handleLoadError">
+    </iron-ajax>
+
+    <iron-ajax
+        id="ajaxTranslationLang"
+        loading="{{loading}}"
+        handle-as="json"
+        verbose="true"
+        last-response="{{langContent}}"
+        on-response="handleTranslationsResponse"
+        on-error="handleLoadError">
+    </iron-ajax>
+
+    <iron-ajax
+        id="ajaxUpdate"
+        handle-as="json"
+        verbose="true"
+        method="PUT"
+        content-type="application/json"
+        body="{{translationItem}}"
+        on-error="handleSaveError">
+    </iron-ajax>
+
+    <iron-ajax
+        id="ajaxGoogleTranslate"
+        url="https://www.googleapis.com/language/translate/v2"
+        handle-as="json"
+        verbose="true"
+        content-type="application/json"
+        on-error="handleTranslationServiceError">
+    </iron-ajax>
+
+
+    <div class="card">
+      <div class="container">
+        <h2>Translating</h2>
+
+        <div class="content-item">
+          <h4>Language:</h4>
+          <span>[[uiModel.lang]]</span>
+        </div>
+
+        <div class="content-item">
+          <h4>Path:</h4>
+          <span>[[uiModel.id]]</span>
+        </div>
+
+        <div class="content-item">
+          <h4>Number of texts:</h4>
+          <span>[[uiModel.propsArray.length]]</span>
+        </div>
+
+      </div>
+    </div>
+
+    <div class="card filter-card">
+      <div class="container card-content">
+        <h2>Filters</h2>
+        <form is="iron-form" id="form" method="post" action="#">
+          <paper-input label="Filter text" type="search" value="{{filter}}"></paper-input>
+          <paper-checkbox checked="{{missingsOnly}}">Show only missing translations</paper-checkbox>
+        </form>
+      </div>
+    </div>
+
+
+    <div id="translation-card" class="card">
+      <div class="container card-content">
+
+        <iron-list id="translationList" class="flex" items="[[uiModel.filteredItems]]" max-physical-count="2000"
+                   selection-enabled
+                   scroll-target="html">
+          <template>
+
+            <div class="translation-unit" role="listbox" tabindex$="[[tabIndex]]">
+              <div class="key-title">
+                <div>[[item.key]]</div>
+                <paper-icon-button hidden$="[[!selected]]" class="lock-icon" icon="icons:lock-outline"
+                                   on-tap="handleLocking"></paper-icon-button>
+
+                <paper-icon-button hidden$="[[!useGoogleTranslation]]" class="lock-icon" icon="icons:g-translate"
+                                   on-tap="handleTranslateService" title="Apply Google translate"></paper-icon-button>
+
+                <saved-message></saved-message>
+              </div>
+
+              <div hidden$="[[selected]]" class="translation-content">
+                <div class="translation-text"><span class="text-title">default:</span> [[item.defaultText]]</div>
+                <div class="translation-text"><span class="text-title">translation:</span> [[item.langText]]</div>
+              </div>
+
+              <div hidden$="[[!selected]]" class="translation-content">
+                <paper-textarea label="default text" value="{{item.defaultText}}" disabled="[[item.meta.locked]]"
+                                on-value-changed="handleDefaultChanged"></paper-textarea>
+                <paper-textarea class="translationTextArea" label="translation" value="{{item.langText}}"
+                                on-value-changed="handleTranslationChanged"></paper-textarea>
+              </div>
+
+            </div>
+
+          </template>
+        </iron-list>
+
+      </div>
+    </div>
+
+  </template>
+
+  <script>
+      Polymer({
+          is: 'tw-translation',
+          properties: {
+              subroute: {
+                  type: String,
+                  observer: '_subrouteChanged'
+              },
+              params: {
+                  type: Object,
+                  observer: '_paramsChanged'
+              },
+              options: Object,
+              info: Object,
+              loading: {
+                  type: Boolean,
+                  value: false,
+                  notify: true
+              },
+              filter: {
+                  type: String,
+                  observer: 'renderList'
+              },
+              missingsOnly: {
+                  type: Boolean,
+                  value: false,
+                  observer: 'renderList'
+              },
+              defaultContent: {
+                  type: Object,
+              },
+              langContent: {
+                  type: Object,
+              },
+              uiModel: {
+                  type: Object,
+                  notify: true,
+                  value: null
+              },
+              translationItem: {
+                  type: Object,
+                  value: {
+                      lang: "",
+                      id: "",
+                      props: {}
+                  }
+              },
+              useGoogleTranslation: {
+                  type: Boolean,
+                  computed: 'haveGoogleTranslationKey(info)'
+              }
+          },
+
+          haveGoogleTranslationKey: function (info) {
+              return typeof(info.googleTranslationKey) !== "undefined";
+          },
+
+          handleLoadError: function () {
+              this.fire('iron-signal', {
+                  name: 'toaster-show',
+                  data: {
+                      text: 'Unable to load from server!'
+                  }
+              });
+          },
+
+          handleSaveError: function () {
+              this.fire('iron-signal', {
+                  name: 'toaster-show',
+                  data: {
+                      text: 'Unable to save your text changes!'
+                  }
+              });
+          },
+
+          handleTranslationServiceError: function () {
+              this.fire('iron-signal', {
+                  name: 'toaster-show',
+                  data: {
+                      text: 'Unable to use the automatic translation service configured'
+                  }
+              });
+          },
+
+          _subrouteChanged: function (newSubroute) {
+              if (newSubroute.prefix !== "/translation")
+                  return;
+
+              // Parse subroute and make requests if we have a valid subroute
+              if (newSubroute.path && newSubroute.path.length > 0) {
+                  var match = /\/(\w+)\/(.+)/.exec(newSubroute.path);
+
+                  if (match.length != 3) {
+                      console.log("Internal error: not a valid subroute to /translation (" + newSubroute.path + ")");
+                  }
+                  var lang = match[1];
+                  var path = match[2];
+
+                  var url = "/resources/translations/" + path;
+
+                  this.defaultContent = null;
+                  this.langContent = null;
+
+                  this.$.ajaxTranslationDefault.url = url;
+                  this.$.ajaxTranslationDefault.generateRequest();
+
+                  this.$.ajaxTranslationLang.url = url;
+                  this.$.ajaxTranslationLang.params = {
+                      "lang": lang
+                  };
+
+                  this.$.ajaxTranslationLang.generateRequest();
+
+                  // Set url of update ajax component
+                  this.$.ajaxUpdate.url = this.$.ajaxTranslationLang.url;
+
+                  // Init ajax update object
+                  this.translationItem.id = path;
+
+              }
+          },
+          _paramsChanged: function (newParams) {
+              this.filter = newParams.filter;
+
+          },
+
+          renderList: function (event) {
+
+              if (this.uiModel) {
+                  this.set('uiModel.filteredItems', this.filterItems(this.uiModel.propsArray));
+              }
+
+          },
+
+          filterItems: function (items) {
+              if ((this.filter && this.filter.length > 2) || this.missingsOnly) {
+                  let filteredItems = [];
+                  for (let item of items) {
+                      let takeItem = item;
+                      if (this.missingsOnly && !item.meta.emptyTranslation) {
+                          takeItem = null;
+                      }
+                      if (takeItem) {
+                          let str = takeItem.key +
+                              takeItem.defaultText +
+                              takeItem.langText;
+
+                          if (str.indexOf(this.filter) == -1) {
+                              takeItem = null;
+                          }
+                      }
+                      if (takeItem) {
+                          filteredItems.push(takeItem);
+                      }
+                  }
+                  return filteredItems;
+              } else {
+                  return items;
+              }
+          },
+
+          handleTranslationsResponse: function (event) {
+              if (this.defaultContent && this.langContent) {
+                  // Build UI model from response objects
+
+                  var propsArray = [];
+                  var defaultArray = Object.entries(this.defaultContent.props);
+                  for (let trans of defaultArray) {
+                      var langTranslation = this.langContent.props[trans[0]];
+                      if (langTranslation == undefined || langTranslation == null)
+                          langTranslation = "";
+
+                      propsArray.push({
+                          key: trans[0],
+                          defaultText: trans[1],
+                          langText: langTranslation,
+                          meta: {
+                              emptyTranslation: langTranslation.trim().length == 0,
+                              locked: true
+                          }
+                      });
+                  }
+
+
+                  this.set('uiModel', {
+                      lang: this.langContent.lang,
+                      id: this.defaultContent.id,
+                      propsArray: propsArray
+                  });
+
+                  this.renderList();
+              }
+          },
+
+          handleDefaultChanged: function (event) {
+              var item = event.model.item;
+              if (item) {
+                  // Filter out false positives
+                  if (event.detail.value === item.defaultText)
+                      return;
+
+                  //console.log("default changed " + item.key + " : " + event.detail.value);
+                  this.saveText('', this.uiModel.id, event.target, item.key, event.detail.value);
+              }
+
+          },
+
+          handleTranslationChanged: function (event) {
+              var item = event.model.item;
+              if (item) {
+                  // Filter out false positives
+                  if (event.detail.value === item.langText)
+                      return;
+
+                  //console.log("lang changed: " + item.key + " : " + event.detail.value);
+                  this.saveText(this.uiModel.lang, this.uiModel.id, event.target, item.key, event.detail.value);
+              }
+
+          },
+
+          saveText: function (lang, id, target, key, value) {
+              this.debounce(lang + '-' + key, function () {
+                  this.translationItem = {
+                      lang: lang,
+                      id: id,
+                      props: {}
+                  };
+
+                  this.translationItem.props[key] = value;
+                  var req = this.$.ajaxUpdate.generateRequest();
+
+                  req.completes.then(function (res) {
+                      if (res.succeeded)
+                          Polymer.dom(target.parentNode.parentNode).querySelector("saved-message").blink();
+                  });
+
+              }, 5000);
+
+          },
+
+          handleLocking: function (event) {
+              //console.log("handleLocking");
+              var item = event.model.item;
+              var index = event.model.index;
+              var doLock = !(item.meta.locked);
+
+              this.set(`uiModel.filteredItems.${index}.meta.locked`, doLock);
+              event.target.icon = doLock ? "icons:lock-outline" : "icons:lock-open";
+          },
+
+          handleTranslateService: function (event) {
+              if (this.info.googleTranslationKey) {
+                  var item = event.model.item;
+                  this.$.ajaxGoogleTranslate.params = {
+                      "key": this.info.googleTranslationKey,
+                      "target": this.options.lang.substr(0, 2),
+                      "q": item.defaultText
+                  };
+                  var req = this.$.ajaxGoogleTranslate.generateRequest();
+
+                  var node = Polymer.dom(event.target.parentNode.parentNode).querySelector(".translationTextArea");
+                  var dis = this;
+
+                  req.completes.then(function (res) {
+                      if (res.succeeded && res.response.data.translations.length > 0) {
+                          Polymer.dom(node).setAttribute("value", res.response.data.translations[0].translatedText);
+                      } else {
+                          dis.handleTranslationServiceError();
+                          console.error("Automatic translation service error: " + res.response);
+                      }
+                  });
+              }
+
+          }
+
+
+      });
+  </script>
+</dom-module>
